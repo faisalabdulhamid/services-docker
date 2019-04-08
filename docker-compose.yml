@@ -48,6 +48,7 @@ services:
         ipv4_address: ${IP_WORKSPACE}
     links:
       - docker-in-docker
+      - mssql
 
 ### PHP-FPM ##############################################
   php-fpm:
@@ -92,6 +93,7 @@ services:
         ipv4_address: ${IP_PHP_FPM}
     links:
       - docker-in-docker
+      - mssql
 
 ### NGINX Server #########################################
   nginx:
@@ -114,6 +116,8 @@ services:
     networks:
       backend:
         ipv4_address: ${IP_NGINX}
+    links:
+      - mssql
 
 ### MSSQL ################################################
   mssql:
@@ -131,23 +135,44 @@ services:
       backend:
         ipv4_address: ${IP_MSSQL}
 
-# MariaDB ##############################################
-  mariadb:
-    build: ./mariadb
-    volumes:
-      #- ${DATA_PATH_HOST}/mariadb:/var/lib/mysql
-      - ./dbdata/mariadb:/var/lib/mysql
-      - ${MARIADB_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
-    ports:
-      - "${MARIADB_PORT}:3306"
+## MariaDB ##############################################
+  # mariadb:
+  #   build: ./mariadb
+  #   volumes:
+  #     - ${DATA_PATH_HOST}/mariadb:/var/lib/mysql
+  #     # - ./dbdata/mariadb:/var/lib/mysql
+  #     - ${MARIADB_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+  #   ports:
+  #     - "${MARIADB_PORT}:3306"
+  #   environment:
+  #     - MYSQL_DATABASE=${MARIADB_DATABASE}
+  #     - MYSQL_USER=${MARIADB_USER}
+  #     - MYSQL_PASSWORD=${MARIADB_PASSWORD}
+  #     - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+  #   networks:
+  #     backend:
+  #       ipv4_address: ${IP_MARIADB}
+
+### MySQL ################################################
+  mysql:
+    build:
+      context: ./mysql
+      args:
+        - MYSQL_VERSION=${MYSQL_VERSION}
     environment:
-      - MYSQL_DATABASE=${MARIADB_DATABASE}
-      - MYSQL_USER=${MARIADB_USER}
-      - MYSQL_PASSWORD=${MARIADB_PASSWORD}
-      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - TZ=${WORKSPACE_TIMEZONE}
+    volumes:
+      - ${DATA_PATH_HOST}/mysql:/var/lib/mysql
+      - ${MYSQL_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+    ports:
+      - "${MYSQL_PORT}:3306"
     networks:
       backend:
-        ipv4_address: ${IP_MARIADB}
+        ipv4_address: ${IP_MYSQL}
 
 ## Redis ################################################
   redis:
@@ -185,15 +210,16 @@ services:
       backend:
         ipv4_address: ${IP_PMA}
 
-### Mailhog ################################################
-  # mailhog:
-  #   build: ./mailhog
-  #   ports:
-  #     - "1025:1025"
-  #     - "8025:8025"
-  #   networks:
-  #     - frontend
-  #     - backend
+## Mailhog ################################################
+  mailhog:
+    build: ./mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      backend:
+        ipv4_address: ${IP_MAILHOG}
+      # - frontend
 
 ## REDISWEBUI ################################################
   redis-webui:
